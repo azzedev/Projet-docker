@@ -1,0 +1,23 @@
+# Utiliser l'image officielle de Node.js
+FROM node:16
+
+# Créer un répertoire de travail dans le conteneur
+WORKDIR /app
+
+# Copier le fichier package.json et package-lock.json pour installer les dépendances
+COPY package*.json ./
+
+# Installer les dépendances du projet
+RUN npm install
+
+# Copier tout le contenu de l'application dans le conteneur
+COPY . /app
+
+# Construire l'application pour production
+RUN npm run build
+
+# Exposer le port (par défaut pour un serveur de développement React)
+EXPOSE 5173
+
+# Démarrer l'application en utilisant un serveur de production
+CMD ["npm", "run", "dev", "--", "--host"]

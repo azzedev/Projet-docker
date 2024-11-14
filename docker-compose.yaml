@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Backend (Flask)
+  backend:
+    build:
+      context: ./backend  # Répertoire contenant le Dockerfile du backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=mysql://user:password@mysql/db_name  # URL de connexion à MySQL
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"  # Route les requêtes avec /api vers le backend
+    - "traefik.http.services.backend.loadbalancer.server.port=5000"
+    depends_on:
+      - mysql
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./frontend  # Répertoire contenant le Dockerfile du frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"  # Route toutes les autres requêtes vers le frontend
+      - "traefik.http.services.frontend.loadbalancer.server.port=5173"
+    depends_on:
+      - backend
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Base de données MySQL
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: db_name
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql  # Volume pour persister les données MySQL
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # phpMyAdmin pour gérer MySQL
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: rootpassword
+    depends_on:
+      - mysql
+    networks:
+      - webnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  traefik:
+      image: traefik:v2.9
+      command:
+        - "--api.insecure=true"  # Active le tableau de bord de Traefik (désactivez en production pour la sécurité)
+        - "--providers.docker=true"  # Active l'intégration Docker
+        - "--entrypoints.web.address=:80"  # Définit le point d’entrée HTTP sur le port 80
+      ports:
+        - "80:80"  # Expose le reverse proxy Traefik sur le port 80
+        - "8080:8080"  # Expose le tableau de bord de Traefik sur le port 8080
+      volumes:
+        - "/var/run/docker.sock:/var/run/docker.sock:ro"  # Nécessaire pour l'intégration Docker
+      networks:
+        - webnet
+      healthcheck:
+        test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/api/rawdata"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+        start_period: 40s
+
+volumes:
+  mysql_data:  # Volume nommé pour persister les données MySQL
+
+networks:
+  webnet:  # Réseau pour connecter tous les services

@@ -63,4 +63,9 @@ def create_app(testing_config=None):
     api.register_blueprint(auth_controller, url_prefix="/api")
     api.register_blueprint(category_controller, url_prefix="/api")
 
+    @app.route('/api/health', methods=['GET'])
+    def health_check():
+        return jsonify(status="healthy"), 200
+
+
     return app
