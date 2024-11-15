@@ -76,8 +76,8 @@ Guide d'utilisation pour lancer le projet a l'aide de docker :
 
 cd dans le projet a la racine 
 
-docker-compose build
-docker-compose up
+docker-compose build =>
+docker-compose up =>
 docker ps (pour vérifié l'état des services)
 
 Une fois que tout les services sont healthy voici les urls pour accéder aux différents services :
