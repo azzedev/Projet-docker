@@ -24,6 +24,7 @@ pytest==7.4.3
 python-dotenv==1.0.0
 sqlalchemy==2.0.23; python_version >= '3.7'
 mysqlclient
+pymysql
 tomli==2.0.1; python_version < '3.11'
 typing-extensions==4.8.0; python_version >= '3.8'
 webargs==8.3.0; python_full_version >= '3.7.2'
